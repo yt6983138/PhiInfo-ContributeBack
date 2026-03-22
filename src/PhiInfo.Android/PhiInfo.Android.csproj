@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\PhiInfo.Core\PhiInfo.Core.csproj" />
+    <ProjectReference Include="..\PhiInfo.HttpServer\PhiInfo.HttpServer.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -12,6 +12,7 @@
     <TrimMode>full</TrimMode>
     <PublishAot>true</PublishAot>
     <PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <PropertyGroup>

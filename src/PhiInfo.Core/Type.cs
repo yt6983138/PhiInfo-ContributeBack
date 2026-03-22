@@ -96,42 +96,6 @@ namespace PhiInfo.Core.Type
         public string content { get; set; }
     }
 
-    public struct SongAsset
-    {
-        public Dictionary<string, Text> charts { get; set; }
-        public Image illustration { get; set; }
-        public Image illustration_low_res { get; set; }
-        public Image illustration_blur { get; set; }
-        public Music music { get; set; }
-    }
-
-    public struct AllAssets
-    {
-        public Dictionary<string, SongAsset> songs { get; set; }
-        public Dictionary<string, Image> collection_covers { get; set; }
-        public Dictionary<string, Image> avatars { get; set; }
-    }
-
-    // Asset path structures for lazy loading
-    public struct SongAssetPath
-    {
-        public Dictionary<string, string> charts { get; set; }  // difficulty -> path
-        public string illustration { get; set; }
-        public string illustration_low_res { get; set; }
-        public string illustration_blur { get; set; }
-        public string music { get; set; }
-    }
-
-    public struct AllAssetsPaths
-    {
-        public Dictionary<string, SongAssetPath> songs { get; set; }
-        public Dictionary<string, string> collection_covers { get; set; }
-        public Dictionary<string, string> avatars { get; set; }
-        public Dictionary<string, string> chapter_covers { get; set; }
-    }
-
-    // ---
-
     public struct ChapterInfo
     {
         public string code { get; set; }

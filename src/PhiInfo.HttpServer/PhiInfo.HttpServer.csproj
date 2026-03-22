@@ -9,12 +9,5 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>full</TrimMode>
-    <PublishAot>true</PublishAot>
-    <PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
   </PropertyGroup>
-
-  <Import Project="PhiInfoNativeApi.targets" />
 </Project>

@@ -1,196 +1,130 @@
-﻿namespace PhiInfo.CLI;
-
-using System;
-using System.Collections.Generic;
+﻿using System;
+using System.CommandLine;
 using System.IO;
-using System.IO.Compression;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Unicode;
-using PhiInfo.Core;
+using System.Threading;
+using AlphaOmega.Debug;
+using AlphaOmega.Debug.Manifest;
 
-[JsonSerializable(typeof(Core.Type.AllInfo))]
-[JsonSerializable(typeof(AllAssetsMetadata))]
-public partial class JsonContext : JsonSerializerContext
+namespace PhiInfo.CLI
 {
-}
-
-
-struct Files
-{
-    public Stream ggm;
-    public Stream level0;
-    public byte[] il2cppBytes;
-    public byte[] metadataBytes;
-    public Stream level22;
-    public Stream catalogJson;
-}
-
-class Program
-{
-    static readonly string dir = "./output/";
-    static void Main(string[] args)
+    public class CLIHttpServer(string apkPath, Stream cldbStream) : HttpServer(apkPath, cldbStream)
     {
-        if (args.Length != 3)
+        protected override string LoadVersionCode()
         {
-            Console.WriteLine("Usage: <apk_path> <format_switch> <asset_switch>");
-            return;
+            var manifestEntry = GetEntrySafe("AndroidManifest.xml");
+            var resourcesEntry = GetEntrySafe("resources.arsc");
+            MemoryStream manifestStream = new();
+            using (var s = manifestEntry.Open())
+                s.CopyTo(manifestStream);
+            manifestStream.Position = 0;
+
+            MemoryStream resourcesStream = new();
+            using (var s = resourcesEntry.Open())
+                s.CopyTo(resourcesStream);
+            resourcesStream.Position = 0;
+
+            using AxmlFile axml = new(new StreamLoader(manifestStream));
+            ArscFile arsc = new(resourcesStream);
+            var Manifest = AndroidManifest.Load(axml, arsc);
+            return Manifest.VersionCode;
         }
+    }
 
-        var apkPath = args[0];
-        var formatSwitch = args[1] == "true" || args[1] == "1";
-        var assetSwitch = args[2] == "true" || args[2] == "1";
-
-        var options = new JsonSerializerOptions
+    class Program
+    {
+        static int Main(string[] args)
         {
-            Encoder = JavaScriptEncoder.Create(UnicodeRanges.All),
-            WriteIndented = formatSwitch,
-        };
-
-        var context = new JsonContext(options);
-
-        using (var apkFs = File.OpenRead(apkPath))
-        using (var zip = new ZipArchive(apkFs, ZipArchiveMode.Read))
-        {
-            var files = SetupFiles(zip);
-
-            var phiInfo = new PhiInfo(
-                files.ggm,
-                files.level0,
-                files.level22,
-                files.il2cppBytes,
-                files.metadataBytes,
-                File.OpenRead("classdata.tpk")
-            );
-
-            files.catalogJson.Position = 0;
-            var catalogParser = new CatalogParser(files.catalogJson);
-
-            Directory.CreateDirectory(dir);
-
-            var allInfo = phiInfo.ExtractAll();
-            var allInfoJson = JsonSerializer.Serialize(allInfo, context.AllInfo);
-            File.WriteAllText(dir + "all_info.json", allInfoJson);
-
-            if (assetSwitch)
+            Option<FileInfo> apkOption = new("--apk")
             {
-                Func<string, Stream> getBundleStreamFunc = (bundleName) =>
+                Description = "Path to the APK file",
+                Required = true
+            };
+
+            Option<FileInfo> classDataOption = new("--classdata")
+            {
+                Description = "Path to the class data TPK file",
+                DefaultValueFactory = _ => new FileInfo("./classdata.tpk")
+            };
+
+            Option<uint> portOption = new("--port")
+            {
+                Description = "Port number for the HTTP server",
+                DefaultValueFactory = _ => 41669
+            };
+
+            Option<string> hostOption = new("--host")
+            {
+                Description = "Host for the HTTP server",
+                DefaultValueFactory = _ => "127.0.0.1"
+            };
+
+            RootCommand rootCommand = new("PhiInfo HTTP Server CLI");
+            rootCommand.Options.Add(apkOption);
+            rootCommand.Options.Add(classDataOption);
+            rootCommand.Options.Add(portOption);
+            rootCommand.Options.Add(hostOption);
+
+            using var exitEvent = new ManualResetEventSlim(false);
+
+            rootCommand.SetAction(parseResult =>
+            {
+                FileInfo? apkFile = parseResult.GetValue(apkOption);
+                FileInfo? classDataFile = parseResult.GetValue(classDataOption);
+                uint port = parseResult.GetValue(portOption);
+                string? host = parseResult.GetValue(hostOption);
+
+                if (apkFile == null || !apkFile.Exists)
                 {
-                    lock (zip)
+                    Console.WriteLine($"Error: APK file not found: {apkFile?.FullName ?? "<null>"}");
+                    return;
+                }
+
+                if (classDataFile == null || !classDataFile.Exists)
+                {
+                    Console.WriteLine($"Error: Class data file not found: {classDataFile?.FullName ?? "<null>"}");
+                    return;
+                }
+
+                if (host == null)
+                {
+                    Console.WriteLine($"Error: Host is null");
+                    return;
+                }
+
+                try
+                {
+                    using var cldb = File.OpenRead(classDataFile.FullName);
+                    using var server = new CLIHttpServer(apkFile.FullName, cldb);
+
+                    _ = server.Start(port, host);
+
+                    Console.CancelKeyPress += (sender, e) =>
                     {
-                        var entry = zip.GetEntry("assets/aa/Android/" + bundleName);
-                        if (entry != null)
-                        {
-                            return ExtractEntryToMemoryStream(entry);
-                        }
-                        throw new FileNotFoundException($"Bundle not found in APK: {bundleName}");
-                    }
-                };
+                        e.Cancel = true; 
+                        
+                        Console.WriteLine("\n[System] Shutdown signal received.");
+                        Console.WriteLine("[System] Stopping server...");
+                        
+                        server.Stop();
+                        exitEvent.Set(); 
+                    };
 
-                var asset = new PhiInfoAsset(catalogParser, getBundleStreamFunc);
-                var assetPaths = asset.ExtractAllAssetsPaths(allInfo);
-                var tarPacker = new TarPacker();
-                var metadata = tarPacker.ConvertToMetadata(assetPaths, asset);
-                tarPacker.PackToTar(dir + "assets.tar", metadata, context);
+                    Console.WriteLine("--------------------------------------------");
+                    Console.WriteLine($"Server is running on http://{host}:{port}/");
+                    Console.WriteLine("Press Ctrl+C to stop the server.");
+                    Console.WriteLine("--------------------------------------------");
 
-                Console.WriteLine("资源提取完成!");
-                Console.WriteLine($"歌曲数: {assetPaths.songs.Count}");
-                Console.WriteLine($"收藏集: {assetPaths.collection_covers.Count}");
-                Console.WriteLine($"头像数: {assetPaths.avatars.Count}");
-                phiInfo.Dispose();
-            }
-            else
-            {
-                phiInfo.Dispose();
-                Console.WriteLine("已跳过资源提取");
-            }
+                    exitEvent.Wait();
+
+                    Console.WriteLine("[System] Server stopped successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Fatal] Server failed to start: {ex.Message}");
+                }
+            });
+
+            return rootCommand.Parse(args).Invoke();
         }
-    }
-
-    static Files SetupFiles(ZipArchive zip)
-    {
-        Stream? ggm = null;
-        Stream? level0 = null;
-        byte[]? il2cppBytes = null;
-        byte[]? metadataBytes = null;
-        Stream? catalogJson = null;
-        List<(int index, byte[] data)> level22Parts = new List<(int, byte[])>();
-
-        foreach (var entry in zip.Entries)
-        {
-            switch (entry.FullName)
-            {
-                case "assets/bin/Data/globalgamemanagers.assets":
-                    ggm = ExtractEntryToMemoryStream(entry);
-                    break;
-                case "assets/bin/Data/level0":
-                    level0 = ExtractEntryToMemoryStream(entry);
-                    break;
-                case "lib/arm64-v8a/libil2cpp.so":
-                    il2cppBytes = ExtractEntryToMemory(entry);
-                    break;
-                case "assets/bin/Data/Managed/Metadata/global-metadata.dat":
-                    metadataBytes = ExtractEntryToMemory(entry);
-                    break;
-                case "assets/aa/catalog.json":
-                    catalogJson = ExtractEntryToMemoryStream(entry);
-                    break;
-            }
-
-            if (entry.FullName.StartsWith("assets/bin/Data/level22.split"))
-            {
-                string suffix = entry.FullName["assets/bin/Data/level22.split".Length..];
-                int index = int.Parse(suffix);
-                level22Parts.Add((index, ExtractEntryToMemory(entry)));
-            }
-        }
-
-        if (ggm == null || level0 == null || il2cppBytes == null || metadataBytes == null || level22Parts.Count == 0)
-            throw new FileNotFoundException("Required Unity assets not found in APK");
-
-        if (catalogJson == null)
-            throw new FileNotFoundException("Catalog not found in APK");
-
-        level22Parts.Sort((a, b) => a.index.CompareTo(b.index));
-
-        Stream level22 = new MemoryStream();
-        foreach (var part in level22Parts)
-            level22.Write(part.data, 0, part.data.Length);
-
-        level22.Position = 0;
-
-        var files = new Files
-        {
-            ggm = ggm,
-            level0 = level0,
-            il2cppBytes = il2cppBytes,
-            metadataBytes = metadataBytes,
-            level22 = level22,
-            catalogJson = catalogJson
-        };
-
-        return files;
-    }
-
-    static byte[] ExtractEntryToMemory(ZipArchiveEntry entry)
-    {
-        using (var ms = new MemoryStream())
-        using (var entryStream = entry.Open())
-        {
-            entryStream.CopyTo(ms);
-            return ms.ToArray();
-        }
-    }
-
-    static MemoryStream ExtractEntryToMemoryStream(ZipArchiveEntry entry)
-    {
-        var ms = new MemoryStream();
-        using (var entryStream = entry.Open())
-        {
-            entryStream.CopyTo(ms);
-        }
-        ms.Position = 0;
-        return ms;
     }
 }
