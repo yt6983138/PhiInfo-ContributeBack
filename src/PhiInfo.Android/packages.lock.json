@@ -14,14 +14,6 @@
         "resolved": "10.0.2",
         "contentHash": "sXdDtMf2qcnbygw9OdE535c2lxSxrZP8gO4UhDJ0xiJbl1wIqXS1OTcTDFTIJPOFd6Mhcm8gPEthqWGUxBsTqw=="
       },
-      "AlphaOmega.ApkReader": {
-        "type": "Transitive",
-        "resolved": "2.0.10",
-        "contentHash": "tks0anhhvPmb9FHnLjEHDg7x/h/5v8MNi41ZWfVemGcq129fDZt4GuN4ZBUyUL6D/YUiNSvuuyjnz1OgrKWs8w==",
-        "dependencies": {
-          "SharpZipLib": "1.4.2"
-        }
-      },
       "AssetRipper.Primitives": {
         "type": "Transitive",
         "resolved": "3.1.3",
@@ -41,6 +33,39 @@
           "Samboy063.LibCpp2IL": "2022.0.7.2"
         }
       },
+      "Fmod5Sharp": {
+        "type": "Transitive",
+        "resolved": "3.1.0",
+        "contentHash": "DPM710gixvM3GrF5FTceXgaAZmH4B3amo92HNIJHiXHUJdeIF3R/cZKDrZzc4A5gzX/M1MbqWBphR90e/b6HxQ==",
+        "dependencies": {
+          "IndexRange": "1.1.0",
+          "NAudio.Core": "2.2.1",
+          "OggVorbisEncoder": "1.2.2"
+        }
+      },
+      "IndexRange": {
+        "type": "Transitive",
+        "resolved": "1.1.0",
+        "contentHash": "fG+2WP1e3Fg3ZVq85XAdiwG9t0twi3r0LvOrTjtbH/31Rd5gLnV5APOD2JHAowbZYDgj9D3rXRbUvIL+ew0WZQ==",
+        "dependencies": {
+          "Microsoft.Bcl.Memory": "9.0.0"
+        }
+      },
+      "Microsoft.Bcl.Memory": {
+        "type": "Transitive",
+        "resolved": "9.0.0",
+        "contentHash": "bTUtGfpGyJnohQzjdXbtc7MqNzkv7CWUSRz54+ucNm0i32rZiIU0VdVPHDBShOl1qhVKRjW8mnEBz3d2vH93tQ=="
+      },
+      "NAudio.Core": {
+        "type": "Transitive",
+        "resolved": "2.2.1",
+        "contentHash": "GgkdP6K/7FqXFo7uHvoqGZTJvW4z8g2IffhOO4JHaLzKCdDOUEzVKtveoZkCuUX8eV2HAINqi7VFqlFndrnz/g=="
+      },
+      "OggVorbisEncoder": {
+        "type": "Transitive",
+        "resolved": "1.2.2",
+        "contentHash": "MZMa5URyED82nJUfGCbulS/1/Np+zhE2mt3h9TuAPOurVN3rYHEaVc7cKd7IK1vROB4UMdTgSoPCW3EJCNmHJw=="
+      },
       "Samboy063.LibCpp2IL": {
         "type": "Transitive",
         "resolved": "2022.1.0-pre-release.19",
@@ -55,11 +80,6 @@
         "resolved": "2022.1.0-pre-release.19",
         "contentHash": "uVQdYm/J6+jJ1xt6GJ3hNhXhciwlX+LmHTPITu9jjZ75T33YJuuTD7pLVYuMymr+4gSVisg7f1wterFSyqJBWA=="
       },
-      "SharpZipLib": {
-        "type": "Transitive",
-        "resolved": "1.4.2",
-        "contentHash": "yjj+3zgz8zgXpiiC3ZdF/iyTBbz2fFvMxZFEBPUcwZjIvXOf37Ylm+K58hqMfIBt5JgU/Z2uoUS67JmTLe973A=="
-      },
       "phiinfo.core": {
         "type": "Project",
         "dependencies": {
@@ -71,7 +91,7 @@
       "phiinfo.httpserver": {
         "type": "Project",
         "dependencies": {
-          "AlphaOmega.ApkReader": "[2.0.10, )",
+          "Fmod5Sharp": "[3.1.0, )",
           "PhiInfo.Core": "[1.0.0, )"
         }
       }

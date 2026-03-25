@@ -4,6 +4,10 @@
     <ProjectReference Include="..\PhiInfo.Core\PhiInfo.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Fmod5Sharp" Version="3.1.0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

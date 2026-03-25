@@ -1,3 +1,5 @@
+using Fmod5Sharp;
+using Fmod5Sharp.CodecRebuilders;
 using PhiInfo.Core;
 using PhiInfo.Core.Type;
 using System;
@@ -21,6 +23,7 @@ namespace PhiInfo
     [JsonSerializable(typeof(List<Avatar>))]
     [JsonSerializable(typeof(List<string>))]
     [JsonSerializable(typeof(List<ChapterInfo>))]
+    [JsonSerializable(typeof(AllInfo))]
     public partial class JsonContext : JsonSerializerContext { }
 
     public abstract class HttpServer : IDisposable
@@ -70,19 +73,19 @@ namespace PhiInfo
                 cldbStream
             );
 
-            const string octetStream = "application/octet-stream";
             const string jsonStream = "application/json";
 
             _routeHandlers = new()
             {
-                ["/asset/text"] = async r => (GetAssetText(r.QueryString["path"]!), octetStream),
-                ["/asset/music"] = async r => (GetAssetMusic(r.QueryString["path"]!), octetStream),
-                ["/asset/image"] = async r => (GetAssetImage(r.QueryString["path"]!), octetStream),
+                ["/asset/text"] = async r => (GetAssetText(r.QueryString["path"]!), "text/plain"),
+                ["/asset/music"] = async r => (GetAssetMusic(r.QueryString["path"]!), "audio/ogg"),
+                ["/asset/image"] = async r => (GetAssetImage(r.QueryString["path"]!), "application/octet-stream"),
                 ["/info/songs"] = async _ => (SerializeJson(_phiInfo.ExtractSongInfo(), _jsonContext.ListSongInfo), jsonStream),
                 ["/info/collection"] = async _ => (SerializeJson(_phiInfo.ExtractCollection(), _jsonContext.ListFolder), jsonStream),
                 ["/info/avatars"] = async _ => (SerializeJson(_phiInfo.ExtractAvatars(), _jsonContext.ListAvatar), jsonStream),
                 ["/info/tips"] = async _ => (SerializeJson(_phiInfo.ExtractTips(), _jsonContext.ListString), jsonStream),
                 ["/info/chapters"] = async _ => (SerializeJson(_phiInfo.ExtractChapters(), _jsonContext.ListChapterInfo), jsonStream),
+                ["/info/all"] = async _ => (SerializeJson(_phiInfo.ExtractAll(), _jsonContext.AllInfo), jsonStream),
                 ["/info/version"] = async _ => (Encoding.UTF8.GetBytes(_phiVersion), "text/plain")
             };
         }
@@ -117,7 +120,7 @@ namespace PhiInfo
             }
         }
 
-        private byte[] SerializeJson<T>(T data, JsonTypeInfo<T> typeInfo)
+        private static byte[] SerializeJson<T>(T data, JsonTypeInfo<T> typeInfo)
         {
             return JsonSerializer.SerializeToUtf8Bytes(data, typeInfo);
         }
@@ -132,7 +135,10 @@ namespace PhiInfo
         private byte[] GetAssetMusic(string? path)
         {
             if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty");
-            return _phiAsset.GetMusicRaw(path).data;
+            var raw = _phiAsset.GetMusicRaw(path);
+            var bank = FsbLoader.LoadFsbFromByteArray(raw.data);
+            var music = FmodVorbisRebuilder.RebuildOggFile(bank.Samples[0]);
+            return music;
         }
 
         private byte[] GetAssetImage(string? path)
