@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PhiInfo.Core\PhiInfo.Core.csproj" />
+    <ProjectReference Include="..\Shua.Zip\Shua.Zip.csproj" />
   </ItemGroup>
 
   <ItemGroup>

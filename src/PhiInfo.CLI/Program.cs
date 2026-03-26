@@ -11,20 +11,8 @@ namespace PhiInfo.CLI
     {
         protected override string LoadVersionCode()
         {
-            var manifestEntry = GetEntrySafe("AndroidManifest.xml");
-            var resourcesEntry = GetEntrySafe("resources.arsc");
-            MemoryStream manifestStream = new();
-            using (var s = manifestEntry.Open())
-                s.CopyTo(manifestStream);
-            manifestStream.Position = 0;
-
-            MemoryStream resourcesStream = new();
-            using (var s = resourcesEntry.Open())
-                s.CopyTo(resourcesStream);
-            resourcesStream.Position = 0;
-
-            using AxmlFile axml = new(new StreamLoader(manifestStream));
-            ArscFile arsc = new(resourcesStream);
+            using AxmlFile axml = new(new StreamLoader(_zip.OpenFileStreamByName("AndroidManifest.xml")));
+            ArscFile arsc = new(_zip.OpenFileStreamByName("resources.arsc"));
             var Manifest = AndroidManifest.Load(axml, arsc);
             return Manifest.VersionCode;
         }
@@ -91,37 +79,30 @@ namespace PhiInfo.CLI
                     return;
                 }
 
-                try
+                using var cldb = File.OpenRead(classDataFile.FullName);
+                using var server = new CLIHttpServer(apkFile.FullName, cldb);
+
+                _ = server.Start(port, host);
+
+                Console.CancelKeyPress += (sender, e) =>
                 {
-                    using var cldb = File.OpenRead(classDataFile.FullName);
-                    using var server = new CLIHttpServer(apkFile.FullName, cldb);
+                    e.Cancel = true; 
+                    
+                    Console.WriteLine("\n[System] Shutdown signal received.");
+                    Console.WriteLine("[System] Stopping server...");
+                    
+                    server.Stop();
+                    exitEvent.Set(); 
+                };
 
-                    _ = server.Start(port, host);
+                Console.WriteLine("--------------------------------------------");
+                Console.WriteLine($"Server is running on http://{host}:{port}/");
+                Console.WriteLine("Press Ctrl+C to stop the server.");
+                Console.WriteLine("--------------------------------------------");
 
-                    Console.CancelKeyPress += (sender, e) =>
-                    {
-                        e.Cancel = true; 
-                        
-                        Console.WriteLine("\n[System] Shutdown signal received.");
-                        Console.WriteLine("[System] Stopping server...");
-                        
-                        server.Stop();
-                        exitEvent.Set(); 
-                    };
+                exitEvent.Wait();
 
-                    Console.WriteLine("--------------------------------------------");
-                    Console.WriteLine($"Server is running on http://{host}:{port}/");
-                    Console.WriteLine("Press Ctrl+C to stop the server.");
-                    Console.WriteLine("--------------------------------------------");
-
-                    exitEvent.Wait();
-
-                    Console.WriteLine("[System] Server stopped successfully.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Fatal] Server failed to start: {ex.Message}");
-                }
+                Console.WriteLine("[System] Server stopped successfully.");
             });
 
             return rootCommand.Parse(args).Invoke();

@@ -92,8 +92,12 @@
         "type": "Project",
         "dependencies": {
           "Fmod5Sharp": "[3.1.0, )",
-          "PhiInfo.Core": "[1.0.0, )"
+          "PhiInfo.Core": "[1.0.0, )",
+          "Shua.Zip": "[1.0.0, )"
         }
+      },
+      "shua.zip": {
+        "type": "Project"
       }
     },
     "net10.0-android36.0/android-arm64": {

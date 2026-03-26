@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhiInfo.Core", "src\PhiInfo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhiInfo.HttpServer", "src\PhiInfo.HttpServer\PhiInfo.HttpServer.csproj", "{8B0F9954-5803-7F40-00EB-FE5D376D413B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shua.Zip", "src\Shua.Zip\Shua.Zip.csproj", "{FB590AAA-AC63-2C60-A659-F5DFEC197596}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +36,10 @@ Global
 		{8B0F9954-5803-7F40-00EB-FE5D376D413B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B0F9954-5803-7F40-00EB-FE5D376D413B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B0F9954-5803-7F40-00EB-FE5D376D413B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB590AAA-AC63-2C60-A659-F5DFEC197596}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB590AAA-AC63-2C60-A659-F5DFEC197596}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB590AAA-AC63-2C60-A659-F5DFEC197596}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB590AAA-AC63-2C60-A659-F5DFEC197596}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -43,8 +49,9 @@ Global
 		{06CB54B4-AD4E-C294-807D-AE38687A65BF} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{099095A9-87D3-F9B0-CA82-B543F50CFFB4} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{8B0F9954-5803-7F40-00EB-FE5D376D413B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{FB590AAA-AC63-2C60-A659-F5DFEC197596} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {5494074F-A519-4591-A4E9-6A0ACC7AF4A3}
+		SolutionGuid = {D137950B-D087-4A9D-9229-D9520F0E67B0}
 	EndGlobalSection
 EndGlobal
