@@ -15,6 +15,10 @@ using System.Text.Json.Serialization.Metadata;
 using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
+using AssetsTools.NET.Texture;
+using SixLabors.ImageSharp.Formats.Bmp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace PhiInfo
 {
@@ -71,7 +75,7 @@ namespace PhiInfo
             {
                 ["/asset/text"] = async r => (GetAssetText(r.QueryString["path"]), "text/plain"),
                 ["/asset/music"] = async r => (GetAssetMusic(r.QueryString["path"]), "audio/ogg"),
-                ["/asset/image"] = async r => (GetAssetImage(r.QueryString["path"]), "application/octet-stream"),
+                ["/asset/image"] = async r => (GetAssetImage(r.QueryString["path"]), "image/bmp"),
                 ["/info/songs"] = async _ =>
                     (SerializeJson(_phiInfo.ExtractSongInfo(), _jsonContext.ListSongInfo), jsonStream),
                 ["/info/collection"] = async _ =>
@@ -143,7 +147,22 @@ namespace PhiInfo
         private byte[] GetAssetImage(string? path)
         {
             if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty");
-            return _phiAsset.GetImageRaw(path).WithHeader();
+            var raw = _phiAsset.GetImageRaw(path);
+            using var img = raw.format switch
+            {
+                3 => SixLabors.ImageSharp.Image.LoadPixelData<Rgb24>(
+                    raw.data, (int)raw.width, (int)raw.height),
+
+                34 => (SixLabors.ImageSharp.Image)SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(
+                    ETCDecoders.ReadETC(raw.data, (int)raw.width, (int)raw.height),
+                    (int)raw.width, (int)raw.height),
+
+                _ => throw new NotSupportedException($"Unknown format: {raw.format}")
+            };
+            img.Mutate(x => x.Flip(FlipMode.Vertical));
+            using var ms = new MemoryStream();
+            img.Save(ms, new BmpEncoder());
+            return ms.ToArray();
         }
 
         protected virtual void Log(string msg)

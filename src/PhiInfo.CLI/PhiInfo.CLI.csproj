@@ -18,6 +18,11 @@
         <TrimMode>full</TrimMode>
         <PublishAot>true</PublishAot>
         <PublishAotUsingRuntimePack>true</PublishAotUsingRuntimePack>
+        <StripSymbols>true</StripSymbols>
+        <DebugType>none</DebugType>
+        <OptimizationPreference>Size</OptimizationPreference>
+        <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+        <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
     </PropertyGroup>
 
     <Import Project="PhiInfo.CLI.targets" />

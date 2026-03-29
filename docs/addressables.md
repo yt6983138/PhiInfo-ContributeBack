@@ -7,11 +7,11 @@
 例如 `Assets/Tracks/Aleph0.LeaF.0` 会有以下内容：  
 ### Music (音乐)
 - `music.wav`  
-可以访问[`http://127.0.0.1:41669/asset/music?path=Assets/Tracks/Aleph0.LeaF.0/music.wav`](http://127.0.0.1:41669/asset/music?path=Assets/Tracks/Aleph0.LeaF.0/music.wav)查看
+可以访问[`http://127.0.0.1:41669/asset/music?path=Assets/Tracks/Aleph0.LeaF.0/music.wav`](http://127.0.0.1:41669/asset/music?path=Assets/Tracks/Aleph0.LeaF.0/music.wav)查看,格式为`ogg`
 
 ### Illustrations (曲绘文件)
 - `Illustration.jpg` – 主封面图  
-可以访问[`http://127.0.0.1:41669/asset/image?path=Assets/Tracks/Aleph0.LeaF.0/Illustration.jpg`](http://127.0.0.1:41669/asset/image?path=Assets/Tracks/Aleph0.LeaF.0/Illustration.jpg)下载
+可以访问[`http://127.0.0.1:41669/asset/image?path=Assets/Tracks/Aleph0.LeaF.0/Illustration.jpg`](http://127.0.0.1:41669/asset/image?path=Assets/Tracks/Aleph0.LeaF.0/Illustration.jpg)查看,格式为`bmp`
 - `IllustrationLowRes.jpg` – 低分辨率封面图
 - `IllustrationBlur.jpg` – 模糊封面图
 

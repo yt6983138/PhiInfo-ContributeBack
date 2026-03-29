@@ -19,6 +19,11 @@
         "resolved": "3.1.3",
         "contentHash": "djZbN/+EXmI+Oia9Pm0LyjZVCPLf60TPSL5rGb7mBEYM5F4CN3nPFXvl2yA5LanPZoHS1Yq7PghGUmkP7Pv9RQ=="
       },
+      "AssetRipper.TextureDecoder": {
+        "type": "Transitive",
+        "resolved": "1.3.0",
+        "contentHash": "8Ok/7NWc8DcDrJegwfaLfXUqta3r7svVPUCUZCthOfZv5/D3uWlluxP1P5Vbk0C6WotujOUofOOIYsuuQVaDkQ=="
+      },
       "AssetsTools.NET": {
         "type": "Transitive",
         "resolved": "3.0.4",
@@ -31,6 +36,15 @@
         "dependencies": {
           "AssetsTools.NET": "3.0.0",
           "Samboy063.LibCpp2IL": "2022.0.7.2"
+        }
+      },
+      "AssetsTools.NET.Texture": {
+        "type": "Transitive",
+        "resolved": "3.0.2",
+        "contentHash": "TI3pS4IuTrM5owRKdGJjRtLhLe799Mh7apxQoFrHvjnLtaWxDHXeIi/8xzC2qzhc5l5r1ta7bffClG3WW9RuVg==",
+        "dependencies": {
+          "AssetRipper.TextureDecoder": "1.3.0",
+          "AssetsTools.NET": "3.0.0"
         }
       },
       "Fmod5Sharp": {
@@ -80,6 +94,11 @@
         "resolved": "2022.1.0-pre-release.19",
         "contentHash": "uVQdYm/J6+jJ1xt6GJ3hNhXhciwlX+LmHTPITu9jjZ75T33YJuuTD7pLVYuMymr+4gSVisg7f1wterFSyqJBWA=="
       },
+      "SixLabors.ImageSharp": {
+        "type": "Transitive",
+        "resolved": "3.1.12",
+        "contentHash": "iAg6zifihXEFS/t7fiHhZBGAdCp3FavsF4i2ZIDp0JfeYeDVzvmlbY1CNhhIKimaIzrzSi5M/NBFcWvZT2rB/A=="
+      },
       "phiinfo.core": {
         "type": "Project",
         "dependencies": {
@@ -91,9 +110,11 @@
       "phiinfo.httpserver": {
         "type": "Project",
         "dependencies": {
+          "AssetsTools.NET.Texture": "[3.0.2, )",
           "Fmod5Sharp": "[3.1.0, )",
           "PhiInfo.Core": "[1.0.0, )",
-          "Shua.Zip": "[1.0.0, )"
+          "Shua.Zip": "[1.0.0, )",
+          "SixLabors.ImageSharp": "[3.1.12, )"
         }
       },
       "shua.zip": {
