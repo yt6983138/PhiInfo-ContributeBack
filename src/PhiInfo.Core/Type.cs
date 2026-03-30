@@ -6,78 +6,59 @@ using System.Collections.Generic;
 
 namespace PhiInfo.Core.Type
 {
-    public struct SongLevel
-    {
-        public string charter { get; set; }
-        public int all_combo_num { get; set; }
-        public double difficulty { get; set; }
-    }
+    public record SongLevel(string charter, int all_combo_num, double difficulty);
 
-    public struct SongInfo
-    {
-        public string id { get; set; }
-        public string key { get; set; }
-        public string name { get; set; }
-        public string composer { get; set; }
-        public string illustrator { get; set; }
-        public double preview_time { get; set; }
-        public double preview_end_time { get; set; }
-        public Dictionary<string, SongLevel> levels { get; set; }
-    }
+    public record SongInfo(
+        string id,
+        string key,
+        string name,
+        string composer,
+        string illustrator,
+        double preview_time,
+        double preview_end_time,
+        Dictionary<string, SongLevel> levels
+    );
 
-    public struct Folder
-    {
-        public string title { get; set; }
-        public string sub_title { get; set; }
-        public string cover { get; set; }
-        public List<FileItem> files { get; set; }
-    }
+    public record Folder(
+        string title,
+        string sub_title,
+        string cover,
+        List<FileItem> files
+    );
 
-    public struct FileItem
-    {
-        public string key { get; set; }
-        public int sub_index { get; set; }
-        public string name { get; set; }
-        public string date { get; set; }
-        public string supervisor { get; set; }
-        public string category { get; set; }
-        public string content { get; set; }
-        public string properties { get; set; }
-    }
+    public record FileItem(
+        string key,
+        int sub_index,
+        string name,
+        string date,
+        string supervisor,
+        string category,
+        string content,
+        string properties
+    );
 
-    public struct Avatar
-    {
-        public string name { get; set; }
-        public string addressable_key { get; set; }
-    }
+    public record Avatar(string name, string addressable_key);
 
-    public struct AllInfo
-    {
-        public List<SongInfo> songs { get; set; }
-        public List<Folder> collection { get; set; }
-        public List<Avatar> avatars { get; set; }
-        public List<string> tips { get; set; }
-        public List<ChapterInfo> chapters { get; set; }
-    }
+    public record AllInfo(
+        List<SongInfo> songs,
+        List<Folder> collection,
+        List<Avatar> avatars,
+        List<string> tips,
+        List<ChapterInfo> chapters
+    );
 
-    public struct Catalog
-    {
-        public string m_KeyDataString { get; set; }
-        public string m_BucketDataString { get; set; }
-        public string m_EntryDataString { get; set; }
-    }
+    public record Catalog(
+        string m_KeyDataString,
+        string m_BucketDataString,
+        string m_EntryDataString
+    );
 
-    public struct Image
+    public record Image(uint format, uint width, uint height, byte[] data)
     {
-        public uint format { get; set; }
-        public uint width { get; set; }
-        public uint height { get; set; }
-        public byte[] data { get; set; }
-
-        public readonly byte[] WithHeader()
+        public byte[] WithHeader()
         {
             var result = new byte[1 + 4 + 4 + 4 + data.Length];
-            result[0] = 72;
+            result[0] = 72; // 'H'
             BitConverter.GetBytes(format).CopyTo(result, 1);
             BitConverter.GetBytes(height).CopyTo(result, 5);
             BitConverter.GetBytes(width).CopyTo(result, 9);
@@ -86,21 +67,13 @@ namespace PhiInfo.Core.Type
         }
     }
 
-    public struct Music
-    {
-        public float length { get; set; }
-        public byte[] data { get; set; }
-    }
+    public record Music(float length, byte[] data);
 
-    public struct Text
-    {
-        public string content { get; set; }
-    }
+    public record Text(string content);
 
-    public struct ChapterInfo
-    {
-        public string code { get; set; }
-        public string banner { get; set; }
-        public List<string> songs { get; set; }
-    }
+    public record ChapterInfo(
+        string code,
+        string banner,
+        List<string> songs
+    );
 }

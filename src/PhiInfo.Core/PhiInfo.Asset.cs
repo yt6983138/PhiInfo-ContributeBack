@@ -84,7 +84,7 @@ public class PhiInfoAsset(CatalogParser catalogParser, Func<string, Stream> getB
                     bun.GetFileRange(1, out var dataFileOffset, out _);
                     var data = ReadRangeAsBytes(bun.DataReader.BaseStream, dataFileOffset + dataOffset,
                         (int)dataSize);
-                    var image = new Image { format = format, width = width, height = height, data = data };
+                    var image = new Image(format, width, height, data);
                     return image;
                 }
             }
@@ -108,7 +108,7 @@ public class PhiInfoAsset(CatalogParser catalogParser, Func<string, Stream> getB
                     bun.GetFileRange(1, out var dataFileOffset, out _);
                     var data = ReadRangeAsBytes(bun.DataReader.BaseStream, dataFileOffset + dataOffset,
                         (int)dataSize);
-                    return new Music { data = data, length = length };
+                    return new Music(length, data);
                 }
             }
 
@@ -126,7 +126,7 @@ public class PhiInfoAsset(CatalogParser catalogParser, Func<string, Stream> getB
                 {
                     var baseField = PhiInfo.GetBaseField(infoFile, info);
                     var text = baseField["m_Script"].AsString;
-                    return new Text { content = text };
+                    return new Text(text);
                 }
             }
 

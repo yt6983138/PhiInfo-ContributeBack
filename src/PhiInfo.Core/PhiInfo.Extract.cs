@@ -54,27 +54,25 @@ namespace PhiInfo.Core
                         string charter = chartersArray[k].AsString;
                         int allCombo = k < allComboNum.Count ? allComboNum[k] : 0;
 
-                        levelsDict[levelName] = new SongLevel
-                        {
-                            charter = charter,
-                            all_combo_num = allCombo,
-                            difficulty = Math.Round(diff, 1)
-                        };
+                        levelsDict[levelName] = new SongLevel(
+                            charter,
+                            allCombo,
+                            Math.Round(diff, 1)
+                        );
                     }
 
                     if (levelsDict.Count == 0) continue;
 
-                    result.Add(new SongInfo
-                    {
-                        id = songId,
-                        key = song["songsKey"].AsString,
-                        name = song["songsName"].AsString,
-                        composer = song["composer"].AsString,
-                        illustrator = song["illustrator"].AsString,
-                        preview_time = Math.Round(song["previewTime"].AsDouble, 2),
-                        preview_end_time = Math.Round(song["previewEndTime"].AsDouble, 2),
-                        levels = levelsDict
-                    });
+                    result.Add(new SongInfo(
+                        songId,
+                        song["songsKey"].AsString,
+                        song["songsName"].AsString,
+                        song["composer"].AsString,
+                        song["illustrator"].AsString,
+                        Math.Round(song["previewTime"].AsDouble, 2),
+                        Math.Round(song["previewEndTime"].AsDouble, 2),
+                        levelsDict
+                    ));
                 }
             }
 
@@ -102,26 +100,24 @@ namespace PhiInfo.Core
                 {
                     var file = filesArray[j];
 
-                    files.Add(new FileItem
-                    {
-                        key = file["key"].AsString,
-                        sub_index = file["subIndex"].AsInt,
-                        name = file["name"][Lang].AsString,
-                        date = file["date"].AsString,
-                        supervisor = file["supervisor"][Lang].AsString,
-                        category = file["category"].AsString,
-                        content = file["content"][Lang].AsString,
-                        properties = file["properties"][Lang].AsString
-                    });
+                    files.Add(new FileItem(
+                        file["key"].AsString,
+                        file["subIndex"].AsInt,
+                        file["name"][Lang].AsString,
+                        file["date"].AsString,
+                        file["supervisor"][Lang].AsString,
+                        file["category"].AsString,
+                        file["content"][Lang].AsString,
+                        file["properties"][Lang].AsString
+                    ));
                 }
 
-                result.Add(new Folder
-                {
-                    title = folder["title"][Lang].AsString,
-                    sub_title = folder["subTitle"][Lang].AsString,
-                    cover = folder["cover"].AsString,
-                    files = files
-                });
+                result.Add(new Folder(
+                    folder["title"][Lang].AsString,
+                    folder["subTitle"][Lang].AsString,
+                    folder["cover"].AsString,
+                    files
+                ));
             }
 
             return result;
@@ -141,11 +137,10 @@ namespace PhiInfo.Core
             for (int i = 0; i < avatarsArray.Children.Count; i++)
             {
                 var avatar = avatarsArray[i];
-                result.Add(new Avatar
-                {
-                    name = avatar["name"].AsString,
-                    addressable_key = avatar["addressableKey"].AsString
-                });
+                result.Add(new Avatar(
+                    avatar["name"].AsString,
+                    avatar["addressableKey"].AsString
+                ));
             }
 
             return result;
@@ -203,12 +198,7 @@ namespace PhiInfo.Core
                     songs.Add(songsArray[j]["songsId"].AsString);
                 }
 
-                result.Add(new ChapterInfo
-                {
-                    code = code,
-                    banner = banner,
-                    songs = songs
-                });
+                result.Add(new ChapterInfo(code, banner, songs));
             }
 
             return result;
@@ -216,14 +206,13 @@ namespace PhiInfo.Core
 
         public AllInfo ExtractAll()
         {
-            return new AllInfo
-            {
-                songs = ExtractSongInfo(),
-                collection = ExtractCollection(),
-                avatars = ExtractAvatars(),
-                tips = ExtractTips(),
-                chapters = ExtractChapters()
-            };
+            return new AllInfo(
+                ExtractSongInfo(),
+                ExtractCollection(),
+                ExtractAvatars(),
+                ExtractTips(),
+                ExtractChapters()
+            );
         }
     }
 }
