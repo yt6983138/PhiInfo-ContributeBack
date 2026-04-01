@@ -17,7 +17,8 @@ using System.Text.Json.Serialization.Metadata;
 using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
-using AssetsTools.NET.Texture;
+using AssetRipper.TextureDecoder.Etc;
+using AssetRipper.TextureDecoder.Rgb.Formats;
 using global.PhiInfo.HttpServer.Type;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -149,7 +150,25 @@ namespace PhiInfo
             var music = FmodVorbisRebuilder.RebuildOggFile(bank.Samples[0]);
             return music;
         }
-
+        
+        private static SixLabors.ImageSharp.Image LoadEtc(
+            ReadOnlySpan<byte> input,
+            int width,
+            int height,
+            bool hasAlpha)
+        {
+            if (hasAlpha)
+            {
+                EtcDecoder.DecompressETC2A8<ColorBGRA<byte>, byte>(input, width, height, out var data);
+                return SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(data, width, height);
+            }
+            else
+            {
+                EtcDecoder.DecompressETC<ColorBGRA<byte>, byte>(input, width, height, out var data);
+                return SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(data, width, height);
+            }
+        }
+        
         private byte[] GetAssetImage(string? path)
         {
             if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path is empty");
@@ -157,14 +176,22 @@ namespace PhiInfo
             using var img = raw.format switch
             {
                 3 => SixLabors.ImageSharp.Image.LoadPixelData<Rgb24>(
-                    raw.data, (int)raw.width, (int)raw.height),
+                    raw.data,
+                    (int)raw.width,
+                    (int)raw.height),
+                
+                4 => SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(
+                    raw.data,
+                    (int)raw.width,
+                    (int)raw.height),
+                
+                34 => LoadEtc(raw.data, (int)raw.width, (int)raw.height, false),
 
-                34 => (SixLabors.ImageSharp.Image)SixLabors.ImageSharp.Image.LoadPixelData<Bgra32>(
-                    ETCDecoders.ReadETC(raw.data, (int)raw.width, (int)raw.height),
-                    (int)raw.width, (int)raw.height),
+                47 => LoadEtc(raw.data, (int)raw.width, (int)raw.height, true),
 
                 _ => throw new NotSupportedException($"Unknown format: {raw.format}")
             };
+
             img.Mutate(x => x.Flip(FlipMode.Vertical));
             using var ms = new MemoryStream();
             img.Save(ms, new BmpEncoder());
