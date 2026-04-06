@@ -15,7 +15,7 @@ internal static class HttpServer
         using var exitEvent = new ManualResetEventSlim(false);
 
         using var server = PhiInfoHttpServer.FromAndroidPackagesPathAndCldb(
-            packages.Select(p => new ShuaZip(new MmapReadAt(p.FullName))), File.OpenRead(classDataFile.FullName),
+            packages.Select(p => new ShuaZip(new MmapReadAt(p.FullName))).ToArray(), File.OpenRead(classDataFile.FullName),
             Program.GetAppInfo(), port, host, lang);
 
         server.OnRequestError += (sender, ex) => { Console.WriteLine($"Server error: {ex}"); };

@@ -16,7 +16,7 @@ internal static class Local
     public static void RunLocalMode(FileInfo[] packages, FileInfo classDataFile, string localOutput, Language lang)
     {
         var dataProvider = new AndroidPackagesDataProvider(
-            packages.Select(p => new ShuaZip(new MmapReadAt(p.FullName))), File.OpenRead(classDataFile.FullName));
+            packages.Select(p => new ShuaZip(new MmapReadAt(p.FullName))).ToArray(), File.OpenRead(classDataFile.FullName));
 
         using var context = new PhiInfoContext(dataProvider, lang);
 

@@ -39,4 +39,20 @@ public static class Extensions
     {
         return LangAttributeMap[lang].Id;
     }
+    
+#if !NET7_0_OR_GREATER
+    public static void ReadExactly(this System.IO.Stream stream, byte[] buffer, int offset, int count)
+    {
+        var totalRead = 0;
+        while (totalRead < count)
+        {
+            var read = stream.Read(buffer, offset + totalRead, count - totalRead);
+            if (read == 0)
+                throw new System.IO.EndOfStreamException();
+
+            totalRead += read;
+        }
+    }
+#else
+#endif
 }

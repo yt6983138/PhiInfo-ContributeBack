@@ -8,19 +8,6 @@ namespace PhiInfo.Core;
 
 public class AssetProvider(IAssetDataProvider dataProvider)
 {
-    private static void ReadExactly(Stream stream, byte[] buffer, int offset, int count)
-    {
-        var totalRead = 0;
-        while (totalRead < count)
-        {
-            var read = stream.Read(buffer, offset + totalRead, count - totalRead);
-            if (read == 0)
-                throw new EndOfStreamException("Unexpected end of stream");
-
-            totalRead += read;
-        }
-    }
-
     private static byte[] ReadRange(Stream stream, long offset, int size)
     {
         var buffer = new byte[size];
@@ -29,7 +16,7 @@ public class AssetProvider(IAssetDataProvider dataProvider)
         try
         {
             stream.Seek(offset, SeekOrigin.Begin);
-            ReadExactly(stream, buffer, 0, size);
+            stream.ReadExactly(buffer, 0, size);
         }
         finally
         {
