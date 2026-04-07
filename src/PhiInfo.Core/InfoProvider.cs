@@ -43,7 +43,7 @@ public class InfoProvider : IDisposable
         }
     }
 
-    public uint GetPhiVersion()
+    public PhiVersion GetPhiVersion()
     {
         return FieldProvider.GetPhiVersion();
     }

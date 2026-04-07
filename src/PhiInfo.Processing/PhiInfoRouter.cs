@@ -20,6 +20,7 @@ namespace PhiInfo.Processing;
 [JsonSerializable(typeof(List<Avatar>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(List<ChapterInfo>))]
+[JsonSerializable(typeof(PhiVersion))]
 [JsonSerializable(typeof(ServerInfo))]
 [JsonSerializable(typeof(AllInfo))]
 [JsonSerializable(typeof(Language))]
@@ -97,8 +98,8 @@ public class PhiInfoRouter(PhiInfoContext context, AppInfo appInfo)
                 return new Response(200, "application/json", allData);
 
             case "/info/version":
-                var version = context.Info.GetPhiVersion().ToString();
-                return new Response(200, "text/plain", Encoding.UTF8.GetBytes(version));
+                var version = SerializeJson(context.Info.GetPhiVersion(), _jsonContext.PhiVersion);
+                return new Response(200, "application/json", version);
 
             case "/info/server":
                 var serverInfo = GetServerInfo();

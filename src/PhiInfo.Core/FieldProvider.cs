@@ -162,7 +162,7 @@ public class FieldProvider : IDisposable
         return baseField;
     }
 
-    public static uint GetPhiVersion()
+    public static PhiVersion GetPhiVersion()
     {
         var meta = LibCpp2IlMain.TheMetadata
                    ?? throw new InvalidOperationException("Cpp2Il is not initialized.");
@@ -175,17 +175,24 @@ public class FieldProvider : IDisposable
                        .FirstOrDefault(t => t.FullName == "Constants")
                    ?? throw new InvalidDataException("Cannot find Constants class.");
 
-        var field = type.Fields?
+        var codeField = type.Fields?
                         .FirstOrDefault(f => f.Name == "IntVersion")
                     ?? throw new InvalidDataException("Cannot find IntVersion field.");
 
-        var defaultValue = meta.GetFieldDefaultValue(field)?.Value
+        var codeDefaultValue = meta.GetFieldDefaultValue(codeField)?.Value
                            ?? throw new InvalidDataException("There is no default value for the IntVersion field.");
+        
+        var nameField = type.Fields?
+                            .FirstOrDefault(f => f.Name == "Version")
+                        ?? throw new InvalidDataException("Cannot find Version field.");
 
-        if (defaultValue is int intValue)
-            return (uint)intValue;
+        var nameDefaultValue = meta.GetFieldDefaultValue(nameField)?.Value
+                               ?? throw new InvalidDataException("There is no default value for the Version field.");
 
-        throw new InvalidDataException($"Invalid version type: {defaultValue.GetType()}");
+        if (codeDefaultValue is int intValue && nameDefaultValue is string stringValue)
+            return new PhiVersion((uint)intValue, stringValue);
+
+        throw new InvalidDataException($"Invalid version type: {nameDefaultValue.GetType()} and {codeDefaultValue.GetType()}");
     }
 
     private bool GetMonoScriptInfo(

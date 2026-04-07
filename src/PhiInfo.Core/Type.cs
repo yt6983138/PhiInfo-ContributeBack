@@ -7,17 +7,27 @@ using System.IO;
 
 namespace PhiInfo.Core.Type;
 
-public record SongLevel(string charter, double difficulty);
+public record SongLevel(
+    // 谱师
+    string charter, 
+    // 定数
+    double difficulty
+);
 
 public record SongInfo(
     string id,
+    // keyStore用的
     string key,
+    // 名称
     string name,
+    // 曲师
     string composer,
+    // 画师
     string illustrator,
+    // 预览时间
     double preview_time,
     double preview_end_time,
-    // 这里的key对应难度等级
+    // key=难度等级
     Dictionary<string, SongLevel> levels
 )
 {
@@ -60,13 +70,19 @@ public record Folder(
 );
 
 public record FileItem(
+    // keyStore用的
     string key,
-    // 一般情况下不需要使用
+    // 云存档用的
     int sub_index,
+    // 名称
     string name,
+    // 收集时间
     string date,
+    // 保管单位
     string supervisor,
+    // 等级
     string category,
+    // 内容
     string content,
     // 额外信息,单个 "名称=值" 结构,与其他信息并列
     string properties
@@ -88,12 +104,28 @@ public record Text(string content);
 
 public record ChapterInfo(
     string code,
+    // 目前无法提取名称,可以用横幅当名称
     string banner,
     List<string> song_ids
-);
+)
+{
+    public string CoverBlurPath()
+    {
+        if (code == "MainStory8") return "Assets/Tracks/#ChapterCover/MainStory8_2BlurS.jpg";
+        return $"Assets/Tracks/#ChapterCover/{code}Blur.jpg";
+    }
+    
+    public string CoverPath()
+    { 
+        if (code == "MainStory8") return "Assets/Tracks/#ChapterCover/MainStory8_2S.jpg";
+        return $"Assets/Tracks/#ChapterCover/{code}.jpg";
+    }
+};
+
+public record PhiVersion(uint code, string name);
 
 public record AllInfo(
-    uint version,
+    PhiVersion version,
     List<SongInfo> songs,
     List<Folder> collection,
     List<Avatar> avatars,
