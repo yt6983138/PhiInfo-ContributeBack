@@ -9,7 +9,7 @@ namespace PhiInfo.Core.Type;
 
 public record SongLevel(
     // 谱师
-    string charter, 
+    string charter,
     // 定数
     double difficulty
 );
@@ -96,12 +96,6 @@ public record Catalog(
     string m_EntryDataString
 );
 
-public record Image(uint format, uint width, uint height, byte[] data);
-
-public record Music(float length, byte[] data);
-
-public record Text(string content);
-
 public record ChapterInfo(
     string code,
     // 目前无法提取名称,可以用横幅当名称
@@ -114,13 +108,13 @@ public record ChapterInfo(
         if (code == "MainStory8") return "Assets/Tracks/#ChapterCover/MainStory8_2BlurS.jpg";
         return $"Assets/Tracks/#ChapterCover/{code}Blur.jpg";
     }
-    
+
     public string CoverPath()
-    { 
+    {
         if (code == "MainStory8") return "Assets/Tracks/#ChapterCover/MainStory8_2S.jpg";
         return $"Assets/Tracks/#ChapterCover/{code}.jpg";
     }
-};
+}
 
 public record PhiVersion(uint code, string name);
 

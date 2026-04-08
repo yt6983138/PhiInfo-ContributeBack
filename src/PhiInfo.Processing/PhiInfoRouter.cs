@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -10,8 +11,10 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Unicode;
 using PhiInfo.Core;
+using PhiInfo.Core.Asset;
 using PhiInfo.Core.Type;
 using PhiInfo.Processing.Type;
+using SixLabors.ImageSharp;
 
 namespace PhiInfo.Processing;
 
@@ -25,7 +28,7 @@ namespace PhiInfo.Processing;
 [JsonSerializable(typeof(AllInfo))]
 [JsonSerializable(typeof(Language))]
 [JsonSerializable(typeof(List<Language>))]
-[JsonSerializable(typeof(Dictionary<string,string>))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 public partial class JsonContext : JsonSerializerContext
 {
 }
@@ -45,7 +48,6 @@ public class PhiInfoRouter(PhiInfoContext context, AppInfo appInfo)
 
     public Response Handle(string path, Dictionary<string, string> query)
     {
-        
         if (path == "/asset")
         {
             var dict = context.Catalog.GetAll()
@@ -58,6 +60,7 @@ public class PhiInfoRouter(PhiInfoContext context, AppInfo appInfo)
             var json = SerializeJson(dict, _jsonContext.DictionaryStringString);
             return new Response(200, "application/json", json);
         }
+
         if (path.StartsWith("/asset/"))
         {
             var segments = path["/asset/".Length..]
@@ -69,8 +72,9 @@ public class PhiInfoRouter(PhiInfoContext context, AppInfo appInfo)
             var type = segments[^1];
             var assetPath = string.Join('/', segments.Take(segments.Length - 1));
 
-            return HandleAsset(assetPath, type);
+            return HandleAsset(assetPath, type, query);
         }
+
         switch (path)
         {
             case "/info/songs":
@@ -146,28 +150,48 @@ public class PhiInfoRouter(PhiInfoContext context, AppInfo appInfo)
 
         return new ServerInfo(version, rid, appInfo);
     }
-    
-    private Response HandleAsset(string name, string type)
+
+    private Response HandleAsset(string name, string type, Dictionary<string, string> query)
     {
-        switch (type.ToLowerInvariant())
+        try
         {
-            case "text":
-                var textData = context.Asset.GetTextRaw(name);
-                return new Response(200, "text/plain", Encoding.UTF8.GetBytes(textData.content));
+            switch (type.ToLowerInvariant())
+            {
+                case "text":
+                {
+                    using var textData = context.Bundle.Get<UnityText>(name);
+                    return new Response(200, "text/plain", Encoding.UTF8.GetBytes(textData.content));
+                }
 
-            case "music":
-                var rawMusic = context.Asset.GetMusicRaw(name);
-                var musicData = PhiInfoDecoders.DecoderMusic(rawMusic);
-                return new Response(200, "audio/ogg", musicData);
+                case "music":
+                    var musicData = PhiInfoDecoders.DecoderMusic(context.Bundle.Get<UnityMusic>(name));
+                    return new Response(200, "audio/ogg", musicData);
 
-            case "image":
-                var bmpData = PhiInfoDecoders.DecoderImageToBmp(
-                    context.Asset.GetImageRaw(name)
-                );
-                return new Response(200, "image/bmp", bmpData);
+                case "image":
+                {
+                    using var ms = new MemoryStream();
+                    using var image = PhiInfoDecoders.DecoderImage(context.Bundle.Get<UnityImage>(name));
+                    switch (query.GetValueOrDefault("format"))
+                    {
+                        case "bmp":
+                            image.SaveAsBmp(ms);
+                            return new Response(200, "image/bmp", ms.ToArray());
 
-            default:
-                return new Response(400, "text/plain", "Invalid asset type"u8.ToArray());
+                        case "jpeg":
+                        case "jpg":
+                        default:
+                            image.SaveAsJpeg(ms);
+                            return new Response(200, "image/jpeg", ms.ToArray());
+                    }
+                }
+
+                default:
+                    return new Response(400, "text/plain", "Invalid asset type"u8.ToArray());
+            }
+        }
+        catch (Exception e)
+        {
+            return new Response(400, "text/plain", Encoding.UTF8.GetBytes(e.Message));
         }
     }
 }

@@ -39,7 +39,7 @@ public static class Extensions
     {
         return LangAttributeMap[lang].Id;
     }
-    
+
 #if !NET7_0_OR_GREATER
     public static void ReadExactly(this System.IO.Stream stream, byte[] buffer, int offset, int count)
     {

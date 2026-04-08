@@ -16,11 +16,11 @@ public class PhiInfoContext : IDisposable
         var field = new FieldProvider(dataProvider);
         Info = new InfoProvider(dataProvider, field, language);
         Catalog = new CatalogProvider(dataProvider);
-        Asset = new AssetProvider(dataProvider);
+        Bundle = new BundleProvider(dataProvider);
         _initialized = true;
     }
 
-    public AssetProvider Asset { get; }
+    public BundleProvider Bundle { get; }
     public InfoProvider Info { get; }
     public CatalogProvider Catalog { get; }
 

@@ -175,6 +175,7 @@ public class InfoProvider : IDisposable
 
     public AllInfo ExtractAllInfo()
     {
-        return new AllInfo(GetPhiVersion(),ExtractSongInfo(),ExtractCollection(),ExtractAvatars(),ExtractTips(),ExtractChapters());
+        return new AllInfo(GetPhiVersion(), ExtractSongInfo(), ExtractCollection(), ExtractAvatars(), ExtractTips(),
+            ExtractChapters());
     }
 }

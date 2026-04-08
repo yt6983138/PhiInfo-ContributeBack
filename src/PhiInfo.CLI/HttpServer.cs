@@ -2,8 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using PhiInfo.Processing;
 using PhiInfo.Core.Type;
+using PhiInfo.Processing;
 using Shua.Zip;
 
 namespace PhiInfo.CLI;
@@ -15,7 +15,8 @@ internal static class HttpServer
         using var exitEvent = new ManualResetEventSlim(false);
 
         using var server = PhiInfoHttpServer.FromAndroidPackagesPathAndCldb(
-            packages.Select(p => new ShuaZip(new MmapReadAt(p.FullName))).ToArray(), File.OpenRead(classDataFile.FullName),
+            packages.Select(p => new ShuaZip(new MmapReadAt(p.FullName))).ToArray(),
+            File.OpenRead(classDataFile.FullName),
             Program.GetAppInfo(), port, host, lang);
 
         server.OnRequestError += (sender, ex) => { Console.WriteLine($"Server error: {ex}"); };

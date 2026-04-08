@@ -1,10 +1,12 @@
 ﻿using System;
 using System.CommandLine;
+using System.CommandLine.Completions;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using PhiInfo.Processing.Type;
 using PhiInfo.Core.Type;
+using PhiInfo.Processing.Type;
+using SixLabors.ImageSharp;
 
 namespace PhiInfo.CLI;
 
@@ -38,7 +40,7 @@ internal class Program
             Description = "Path to the class data TPK file",
             DefaultValueFactory = _ => new FileInfo("./classdata.tpk")
         };
-        
+
         Option<Language> langOption = new("--language")
         {
             Aliases = { "-l", "--lang" },
@@ -63,10 +65,39 @@ internal class Program
         Option<string> localOutputOption = new("--output")
         {
             Aliases = { "-o" },
-            Description = "Output directory for local mode",
+            Description = "Output directory",
             DefaultValueFactory = _ => "./output"
         };
 
+        Option<string> imageFormatOption = new("--image-format")
+        {
+            Aliases = { "-if" },
+            Description = "Image Format",
+            DefaultValueFactory = _ => "JPEG",
+            CompletionSources =
+            {
+                _ =>
+                {
+                    return Configuration.Default.ImageFormatsManager.ImageFormats
+                        .Select(v => new CompletionItem(v.Name));
+                }
+            },
+            CustomParser = result =>
+            {
+                var manager = Configuration.Default.ImageFormatsManager;
+
+                var value = result.Tokens.Single().Value;
+
+                var format = manager.FindByName(value);
+                if (format == null)
+                {
+                    result.AddError($"Unknown format: {value}");
+                    return null;
+                }
+
+                return format.Name;
+            }
+        };
         // 服务器命令
         Command serverCommand = new("server", "Run HTTP server mode");
         serverCommand.Options.Add(portOption);
@@ -86,15 +117,18 @@ internal class Program
         // 本地命令
         Command localCommand = new("local", "Run local extraction mode");
         localCommand.Options.Add(localOutputOption);
+        localCommand.Options.Add(imageFormatOption);
         localCommand.SetAction(parseResult =>
         {
+            var manager = Configuration.Default.ImageFormatsManager;
             var packages = parseResult.GetValue(packagesOption)!;
             var classData = parseResult.GetValue(classDataOption)!;
             var output = parseResult.GetValue(localOutputOption)!;
-            var lang = parseResult.GetValue(langOption)!;
+            var lang = parseResult.GetValue(langOption);
+            var format = parseResult.GetValue(imageFormatOption)!;
             if (!ValidateCommonOptions(packages, classData))
                 return;
-            Local.RunLocalMode(packages, classData, output, lang);
+            Local.RunLocalMode(packages, classData, output, lang, manager.FindByName(format)!);
         });
 
         // Root command
@@ -107,7 +141,7 @@ internal class Program
 
         return rootCommand.Parse(args).Invoke();
     }
-    
+
     private static bool ValidateCommonOptions(FileInfo[] packages, FileInfo classDataFile)
     {
         var anyNotFound = packages.FirstOrDefault(p => !p.Exists);
@@ -117,9 +151,9 @@ internal class Program
             return false;
         }
 
-        if (classDataFile is not { Exists: true })
+        if (!classDataFile.Exists)
         {
-            Console.WriteLine($"Error: Class data file not found: {classDataFile?.FullName ?? "<null>"}");
+            Console.WriteLine($"Error: Class data file not found: {classDataFile.FullName}");
             return false;
         }
 
