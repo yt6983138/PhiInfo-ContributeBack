@@ -118,9 +118,16 @@ public sealed class CatalogProvider
         var len = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(pos, 4));
         pos += 4;
 
+
+#if NETSTANDARD2_1 || NET5_0_OR_GREATER
+        var array = data.Slice(pos, len);
+#else
+        var array = data.Slice(pos, len).ToArray();
+#endif
+
         var val = type == CatalogKeyType.UnicodeString
-            ? Encoding.Unicode.GetString(data.Slice(pos, len))
-            : Encoding.UTF8.GetString(data.Slice(pos, len));
+            ? Encoding.Unicode.GetString(array)
+            : Encoding.UTF8.GetString(array);
 
         pos += len;
         return val;
@@ -151,7 +158,7 @@ public sealed class CatalogProvider
 
     public Key? Get(string key)
     {
-        return _stringIndex.GetValueOrDefault(key, null);
+        return _stringIndex.TryGetValue(key, out var value) ? value : null;
     }
 
     private readonly struct RawEntry

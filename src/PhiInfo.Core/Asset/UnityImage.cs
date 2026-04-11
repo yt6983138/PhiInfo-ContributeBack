@@ -5,42 +5,42 @@ using System;
 using System.IO;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-using PhiInfo.Core.Asset.Type;
 
 namespace PhiInfo.Core.Asset;
 
-public record struct UnityImage(uint format, uint width, uint height, Stream data)
-    : IFromBundle<UnityImage>, IDisposable
+public class UnityImage : UnityAsset
 {
-    private readonly MappedAssetBundle _bundle;
+    public uint Format { get; private set; }
 
-    private UnityImage(uint format, uint width, uint height, Stream data, MappedAssetBundle bundle)
-        : this(format, width, height, data)
+    public int Width { get; private set; }
+    public int Height { get; private set; }
+    public Stream Data { get; private set; } = null!;
+
+    internal override void Init(Stream bundleStream)
     {
-        _bundle = bundle;
-    }
+        base.Init(bundleStream);
+        var field = FindAssetField(AssetClassID.Texture2D) ??
+                    throw new ArgumentException("No Texture2D found.", nameof(bundleStream));
 
-    public void Dispose()
-    {
-        _bundle.Dispose();
-    }
-
-    public static UnityImage FromBundle(MappedAssetBundle bundle)
-    {
-        var field = bundle.FindAssetField(AssetClassID.Texture2D) ??
-                    throw new ArgumentException("No Texture2D found.", nameof(bundle));
-
-        var width = field["m_Width"].AsUInt;
-        var height = field["m_Height"].AsUInt;
-        var format = field["m_TextureFormat"].AsUInt;
+        Width = field["m_Width"].AsInt;
+        Height = field["m_Height"].AsInt;
+        Format = field["m_TextureFormat"].AsUInt;
 
         var dataOffset = field["m_StreamData"]["offset"].AsLong;
         var size = field["m_StreamData"]["size"].AsLong;
 
-        bundle.BundleFile.GetFileRange(1, out var dataFileOffset, out _);
+        Bundle.GetFileRange(1, out var dataFileOffset, out _);
         var offset = dataFileOffset + dataOffset;
-        var data = new SegmentStream(bundle.BundleFile.DataReader.BaseStream, offset, size);
+        Data = new SegmentStream(Bundle.DataReader.BaseStream, offset, size);
+    }
 
-        return new UnityImage(format, width, height, data, bundle);
+    protected override void Dispose(bool disposing)
+    {
+        if (Disposed)
+            return;
+
+        if (disposing) Data.Dispose();
+
+        base.Dispose(disposing);
     }
 }

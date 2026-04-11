@@ -7,6 +7,7 @@ using Android.Util;
 using PhiInfo.Processing;
 using PhiInfo.Processing.Type;
 using Shua.Zip;
+using Shua.Zip.ReadAt;
 
 namespace PhiInfo.Android;
 

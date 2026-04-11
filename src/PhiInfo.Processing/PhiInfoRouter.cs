@@ -160,7 +160,7 @@ public class PhiInfoRouter(PhiInfoContext context, AppInfo appInfo)
                 case "text":
                 {
                     using var textData = context.Bundle.Get<UnityText>(name);
-                    return new Response(200, "text/plain", Encoding.UTF8.GetBytes(textData.content));
+                    return new Response(200, "text/plain", Encoding.UTF8.GetBytes(textData.Content));
                 }
 
                 case "music":

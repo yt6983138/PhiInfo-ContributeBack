@@ -147,7 +147,7 @@ public enum Language
 }
 
 public interface IDataProvider : IDisposable, IFieldDataProvider, IInfoDataProvider, ICatalogDataProvider,
-    IAssetDataProvider;
+    IBundleDataProvider;
 
 public interface IFieldDataProvider
 {
@@ -168,7 +168,7 @@ public interface ICatalogDataProvider
     Stream GetCatalog();
 }
 
-public interface IAssetDataProvider
+public interface IBundleDataProvider
 {
     Stream GetBundle(string name);
 }

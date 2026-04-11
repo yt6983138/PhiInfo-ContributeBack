@@ -23,7 +23,7 @@ public class AndroidPackagesDataProvider(IEnumerable<ShuaZip> zips, Stream cldbS
     public Stream GetGlobalGameManagers()
     {
         var (zip, entry) = FindEntryInAllZips("assets/bin/Data/globalgamemanagers.assets");
-        return zip.OpenFileStream(entry);
+        return EnsureSeekable(zip.OpenFileStream(entry));
     }
 
     public byte[] GetIl2CppBinary()
@@ -41,7 +41,7 @@ public class AndroidPackagesDataProvider(IEnumerable<ShuaZip> zips, Stream cldbS
     public Stream GetLevel0()
     {
         var (zip, entry) = FindEntryInAllZips("assets/bin/Data/level0");
-        return zip.OpenFileStream(entry);
+        return EnsureSeekable(zip.OpenFileStream(entry));
     }
 
     public Stream GetLevel22()
@@ -65,8 +65,10 @@ public class AndroidPackagesDataProvider(IEnumerable<ShuaZip> zips, Stream cldbS
             throw new FileNotFoundException("Required Unity assets missing from APK");
 
         level22Parts.Sort((a, b) => a.index.CompareTo(b.index));
+
         MemoryStream level22 = new();
-        foreach (var (index, name, zip) in level22Parts)
+
+        foreach (var (_, name, zip) in level22Parts)
         {
             var data = zip.ReadFileByName(name);
             level22.Write(data, 0, data.Length);
@@ -79,13 +81,13 @@ public class AndroidPackagesDataProvider(IEnumerable<ShuaZip> zips, Stream cldbS
     public Stream GetCatalog()
     {
         var (zip, entry) = FindEntryInAllZips("assets/aa/catalog.json");
-        return zip.OpenFileStream(entry);
+        return EnsureSeekable(zip.OpenFileStream(entry));
     }
 
     public Stream GetBundle(string name)
     {
         var (zip, entry) = FindEntryInAllZips("assets/aa/Android/" + name);
-        return zip.OpenFileStream(entry);
+        return EnsureSeekable(zip.OpenFileStream(entry));
     }
 
     public void Dispose()
@@ -111,7 +113,6 @@ public class AndroidPackagesDataProvider(IEnumerable<ShuaZip> zips, Stream cldbS
 
         zip = null;
         entry = null;
-
         return false;
     }
 
@@ -121,6 +122,22 @@ public class AndroidPackagesDataProvider(IEnumerable<ShuaZip> zips, Stream cldbS
             return (zip, entry);
 
         throw new FileNotFoundException($"Required Unity asset '{fileName}' missing from provided packages.");
+    }
+
+    private static Stream EnsureSeekable(Stream stream)
+    {
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
+            return stream;
+        }
+
+        var ms = new MemoryStream();
+        stream.CopyTo(ms);
+        ms.Position = 0;
+
+        stream.Dispose();
+        return ms;
     }
 
     protected virtual void Dispose(bool disposing)

@@ -2,31 +2,30 @@
 #pragma warning disable IDE0130
 
 using System;
+using System.IO;
 using AssetsTools.NET.Extra;
-using PhiInfo.Core.Asset.Type;
 
 namespace PhiInfo.Core.Asset;
 
-public record struct UnityText(string content) : IFromBundle<UnityText>, IDisposable
+public class UnityText : UnityAsset
 {
-    private readonly MappedAssetBundle _bundle;
+    public string Content { get; private set; } = string.Empty;
 
-    private UnityText(string content, MappedAssetBundle bundle)
-        : this(content)
+    internal override void Init(Stream bundleStream)
     {
-        _bundle = bundle;
+        base.Init(bundleStream);
+
+        var field = FindAssetField(AssetClassID.TextAsset)
+                    ?? throw new ArgumentException("No TextAsset found.", nameof(bundleStream));
+
+        Content = field["m_Script"].AsString;
     }
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
-        _bundle.Dispose();
-    }
+        if (Disposed)
+            return;
 
-    public static UnityText FromBundle(MappedAssetBundle bundle)
-    {
-        var field = bundle.FindAssetField(AssetClassID.TextAsset) ??
-                    throw new ArgumentException("No TextAsset found.", nameof(bundle));
-
-        return new UnityText(field["m_Script"].AsString, bundle);
+        base.Dispose(disposing);
     }
 }

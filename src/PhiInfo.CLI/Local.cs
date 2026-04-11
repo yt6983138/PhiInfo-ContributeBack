@@ -1,7 +1,11 @@
 using System;
+using System.CommandLine;
+using System.CommandLine.Completions;
 using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Unicode;
 using System.Threading.Tasks;
 using PhiInfo.Core;
 using PhiInfo.Core.Asset;
@@ -17,19 +21,85 @@ namespace PhiInfo.CLI;
 
 internal static class Local
 {
-    public static void RunLocalMode(FileInfo[] packages, FileInfo classDataFile, string localOutput, Language lang,
+    private static readonly JsonContext JsonContext = new(new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+    });
+
+    public static Command CreateCommand(
+        Option<IReadAt[]> packagesOption,
+        Option<FileInfo> classDataOption,
+        Option<Language> langOption)
+    {
+        var outputOption = new Option<string>("--output")
+        {
+            Aliases = { "-o" },
+            Description = "Output directory",
+            DefaultValueFactory = _ => "./output"
+        };
+
+        var imageFormatOption = new Option<string>("--image-format")
+        {
+            Aliases = { "-if" },
+            Description = "Image Format",
+            DefaultValueFactory = _ => "JPEG",
+            CompletionSources =
+            {
+                _ =>
+                {
+                    return Configuration.Default.ImageFormatsManager.ImageFormats
+                        .Select(v => new CompletionItem(v.Name));
+                }
+            },
+            CustomParser = result =>
+            {
+                var manager = Configuration.Default.ImageFormatsManager;
+
+                var value = result.Tokens.Single().Value;
+
+                var format = manager.FindByName(value);
+                if (format == null)
+                {
+                    result.AddError($"Unknown format: {value}");
+                    return null;
+                }
+
+                return format.Name;
+            }
+        };
+
+        var command = new Command("local", "Run local extraction mode");
+        command.Options.Add(outputOption);
+        command.Options.Add(imageFormatOption);
+        command.SetAction(parseResult =>
+        {
+            var manager = Configuration.Default.ImageFormatsManager;
+            var packages = parseResult.GetValue(packagesOption)!;
+            var classData = parseResult.GetValue(classDataOption)!;
+            var output = parseResult.GetValue(outputOption)!;
+            var lang = parseResult.GetValue(langOption);
+            var format = parseResult.GetValue(imageFormatOption)!;
+
+            if (!Program.ValidateCommonOptions(packages, classData))
+                return;
+
+            var shuaZips = packages.Select(p => new ShuaZip(p)).ToArray();
+            var dataProvider = new AndroidPackagesDataProvider(shuaZips, File.OpenRead(classData.FullName));
+
+            RunLocalMode(dataProvider, output, lang, manager.FindByName(format)!);
+        });
+        return command;
+    }
+
+    public static void RunLocalMode(AndroidPackagesDataProvider dataProvider, string localOutput, Language lang,
         IImageFormat format)
     {
-        var dataProvider = new AndroidPackagesDataProvider(
-            packages.Select(p => new ShuaZip(new MmapReadAt(p.FullName))).ToArray(),
-            File.OpenRead(classDataFile.FullName));
-
         using var context = new PhiInfoContext(dataProvider, lang);
 
         Directory.CreateDirectory(localOutput);
 
         var allInfo = context.Info.ExtractAllInfo();
-        var allInfoJson = JsonSerializer.Serialize(allInfo, JsonContext.Default.AllInfo);
+        var allInfoJson = JsonSerializer.Serialize(allInfo, JsonContext.AllInfo);
         File.WriteAllText(Path.Combine(localOutput, "all_info.json"), allInfoJson);
 
         var assetDir = Path.Combine(localOutput, "asset");
@@ -58,7 +128,7 @@ internal static class Local
         if (outputPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
             using var textData = context.Bundle.Get<UnityText>(assetId);
-            File.WriteAllText(fullOutputPath, textData.content);
+            File.WriteAllText(fullOutputPath, textData.Content);
         }
         else if (outputPath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
         {

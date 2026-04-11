@@ -5,38 +5,39 @@ using System;
 using System.IO;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-using PhiInfo.Core.Asset.Type;
 
 namespace PhiInfo.Core.Asset;
 
-public record struct UnityMusic(float length, Stream data) : IFromBundle<UnityMusic>, IDisposable
+public class UnityMusic : UnityAsset
 {
-    private readonly MappedAssetBundle _bundle;
+    public float Length { get; private set; }
+    public Stream Data { get; private set; } = null!;
 
-    private UnityMusic(float length, Stream data, MappedAssetBundle bundle)
-        : this(length, data)
+    internal override void Init(Stream bundleStream)
     {
-        _bundle = bundle;
-    }
+        base.Init(bundleStream);
 
-    public void Dispose()
-    {
-        _bundle.Dispose();
-    }
+        var field = FindAssetField(AssetClassID.AudioClip)
+                    ?? throw new ArgumentException("No AudioClip found.", nameof(bundleStream));
 
-    public static UnityMusic FromBundle(MappedAssetBundle bundle)
-    {
-        var field = bundle.FindAssetField(AssetClassID.AudioClip) ??
-                    throw new ArgumentException("No AudioClip found.", nameof(bundle));
+        Length = field["m_Length"].AsFloat;
 
         var dataOffset = field["m_Resource"]["m_Offset"].AsLong;
         var size = field["m_Resource"]["m_Size"].AsLong;
-        var length = field["m_Length"].AsFloat;
 
-        bundle.BundleFile.GetFileRange(1, out var dataFileOffset, out _);
+        Bundle.GetFileRange(1, out var dataFileOffset, out _);
         var offset = dataFileOffset + dataOffset;
-        var data = new SegmentStream(bundle.BundleFile.DataReader.BaseStream, offset, size);
 
-        return new UnityMusic(length, data, bundle);
+        Data = new SegmentStream(Bundle.DataReader.BaseStream, offset, size);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (Disposed)
+            return;
+
+        if (disposing) Data.Dispose();
+
+        base.Dispose(disposing);
     }
 }

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 
-namespace Shua.Zip;
+namespace Shua.Zip.ReadAt;
 
 public sealed class MmapReadAt : IReadAt
 {

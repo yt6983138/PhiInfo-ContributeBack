@@ -4,6 +4,11 @@ using System.Linq;
 using System.Reflection;
 using AssetsTools.NET;
 using PhiInfo.Core.Type;
+#if !NET7_0_OR_GREATER
+using System.IO;
+
+#else
+#endif
 
 namespace PhiInfo.Core;
 
@@ -41,14 +46,14 @@ public static class Extensions
     }
 
 #if !NET7_0_OR_GREATER
-    public static void ReadExactly(this System.IO.Stream stream, byte[] buffer, int offset, int count)
+    public static void ReadExactly(this Stream stream, byte[] buffer, int offset, int count)
     {
         var totalRead = 0;
         while (totalRead < count)
         {
             var read = stream.Read(buffer, offset + totalRead, count - totalRead);
             if (read == 0)
-                throw new System.IO.EndOfStreamException();
+                throw new EndOfStreamException();
 
             totalRead += read;
         }

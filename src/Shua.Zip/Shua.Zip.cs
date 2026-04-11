@@ -5,8 +5,11 @@ using System.IO.Compression;
 
 namespace Shua.Zip;
 
+public delegate Stream DecompressionHandler(IReadAt reader, long dataOffset, int compressedSize, int uncompressedSize);
+
 public sealed class ShuaZip : IDisposable
 {
+    private readonly Dictionary<ushort, DecompressionHandler> _decompressionHandlers;
     private readonly IReadAt _reader;
     private readonly long _size;
     private bool _disposed;
@@ -15,6 +18,7 @@ public sealed class ShuaZip : IDisposable
     {
         _reader = reader;
         _size = reader.Size;
+        _decompressionHandlers = CreateDefaultHandlers();
         FileEntries = LoadCentralDirectory();
     }
 
@@ -25,6 +29,11 @@ public sealed class ShuaZip : IDisposable
         if (_disposed) return;
         _disposed = true;
         _reader.Dispose();
+    }
+
+    public void RegisterDecompression(ushort method, DecompressionHandler handler)
+    {
+        _decompressionHandlers[method] = handler;
     }
 
     private List<FileEntry> LoadCentralDirectory()
@@ -113,24 +122,36 @@ public sealed class ShuaZip : IDisposable
 
         if (entry.CompressedSize > int.MaxValue) throw new InvalidOperationException("Compressed size too large");
 
-        var rawStream = _reader.OpenRead(dataOffset, (int)entry.CompressedSize);
+        var compressionMethod = entry.CompressionMethod.Value;
 
-        if (entry.CompressionMethod.IsStored) return rawStream;
+        if (!_decompressionHandlers.TryGetValue(compressionMethod, out var handler))
+            throw new InvalidOperationException($"Unsupported compression method: {compressionMethod}");
 
-        if (entry.CompressionMethod.IsDeflate)
+        if (entry.UncompressedSize > int.MaxValue)
+            throw new InvalidOperationException("Uncompressed size too large");
+
+        return handler(_reader, dataOffset, (int)entry.CompressedSize, (int)entry.UncompressedSize);
+    }
+
+    private static Dictionary<ushort, DecompressionHandler> CreateDefaultHandlers()
+    {
+        return new Dictionary<ushort, DecompressionHandler>
         {
-            if (entry.UncompressedSize > int.MaxValue)
-                throw new InvalidOperationException("Uncompressed size too large");
-
-            using var deflateStream = new DeflateStream(rawStream, CompressionMode.Decompress, false);
-            var memory = new MemoryStream((int)entry.UncompressedSize);
-            deflateStream.CopyTo(memory);
-            memory.Position = 0;
-            return memory;
-        }
-
-        rawStream.Dispose();
-        throw new InvalidOperationException($"Unsupported compression method: {entry.CompressionMethod.Value}");
+            // 0: 存储（无压缩）
+            {
+                0, (reader, offset, compressedSize, uncompressedSize) =>
+                    reader.OpenRead(offset, compressedSize)
+            },
+            // 8: Deflate压缩
+            {
+                8,
+                (reader, offset, compressedSize, uncompressedSize) =>
+                {
+                    return new DeflateStream(reader.OpenRead(offset, compressedSize), CompressionMode.Decompress,
+                        false);
+                }
+            }
+        };
     }
 
     private byte[] ReadAt(long offset, int length)
