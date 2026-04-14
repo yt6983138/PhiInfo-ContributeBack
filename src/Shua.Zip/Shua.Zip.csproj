@@ -7,5 +7,10 @@
         <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
         <OutputType>Library</OutputType>
         <LangVersion>14</LangVersion>
+        
+        <PackageId>Shua.Zip</PackageId>
+        <Version>1.0</Version>
+        <Authors>Shua</Authors>
+        <Description>Shua's Zip Decompression Library</Description>
     </PropertyGroup>
 </Project>

@@ -23,5 +23,8 @@
         <GitHash>dev</GitHash>
         <InformationalVersion>$(Version)+$(GitHash)</InformationalVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+        <PackageId>PhigrosLabs.PhiInfo.Processing</PackageId>
+        <Authors>PhigrosLabs</Authors>
+        <Description>The processing library of PhiInfo.Core</Description>
     </PropertyGroup>
 </Project>
