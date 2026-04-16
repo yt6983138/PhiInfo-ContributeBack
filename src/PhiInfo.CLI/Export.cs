@@ -9,93 +9,78 @@ using System.Text.Unicode;
 using System.Threading.Tasks;
 using PhiInfo.Core;
 using PhiInfo.Core.Asset;
-using PhiInfo.Core.Type;
 using PhiInfo.Processing;
-using PhiInfo.Processing.DataProvider;
-using Shua.Zip;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using JsonContext = PhiInfo.Processing.JsonContext;
 
 namespace PhiInfo.CLI;
 
-internal static class Local
+internal static class Export
 {
     private static readonly JsonContext JsonContext = new(new JsonSerializerOptions
     {
         Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
     });
 
-    public static Command CreateCommand(
-        Option<IReadAt[]> packagesOption,
-        Option<FileInfo> classDataOption,
-        Option<Language> langOption)
+    private static readonly Option<string> OutputOption = new("--output")
     {
-        var outputOption = new Option<string>("--output")
+        Aliases = { "-o" },
+        Description = "Output directory",
+        DefaultValueFactory = _ => "./output"
+    };
+
+    private static readonly Option<string> ImageFormatOption = new("--image-format")
+    {
+        Aliases = { "-if" },
+        Description = "Image Format",
+        DefaultValueFactory = _ => "JPEG",
+        CompletionSources =
         {
-            Aliases = { "-o" },
-            Description = "Output directory",
-            DefaultValueFactory = _ => "./output"
-        };
-
-        var imageFormatOption = new Option<string>("--image-format")
-        {
-            Aliases = { "-if" },
-            Description = "Image Format",
-            DefaultValueFactory = _ => "JPEG",
-            CompletionSources =
+            _ =>
             {
-                _ =>
-                {
-                    return Configuration.Default.ImageFormatsManager.ImageFormats
-                        .Select(v => new CompletionItem(v.Name));
-                }
-            },
-            CustomParser = result =>
-            {
-                var manager = Configuration.Default.ImageFormatsManager;
-
-                var value = result.Tokens.Single().Value;
-
-                var format = manager.FindByName(value);
-                if (format == null)
-                {
-                    result.AddError($"Unknown format: {value}");
-                    return null;
-                }
-
-                return format.Name;
+                return Configuration.Default.ImageFormatsManager.ImageFormats
+                    .Select(v => new CompletionItem(v.Name));
             }
-        };
-
-        var command = new Command("local", "Run local extraction mode");
-        command.Options.Add(outputOption);
-        command.Options.Add(imageFormatOption);
-        command.SetAction(parseResult =>
+        },
+        CustomParser = result =>
         {
             var manager = Configuration.Default.ImageFormatsManager;
-            var packages = parseResult.GetValue(packagesOption)!;
-            var classData = parseResult.GetValue(classDataOption)!;
-            var output = parseResult.GetValue(outputOption)!;
-            var lang = parseResult.GetValue(langOption);
-            var format = parseResult.GetValue(imageFormatOption)!;
 
-            if (!Program.ValidateCommonOptions(packages, classData))
-                return;
+            var value = result.Tokens.Single().Value;
 
-            var shuaZips = packages.Select(p => new ShuaZip(p)).ToArray();
-            var dataProvider = new AndroidPackagesDataProvider(shuaZips, File.OpenRead(classData.FullName));
+            var format = manager.FindByName(value);
+            if (format == null)
+            {
+                result.AddError($"Unknown format: {value}");
+                return null;
+            }
 
-            RunLocalMode(dataProvider, output, lang, manager.FindByName(format)!);
-        });
-        return command;
+            return format.Name;
+        }
+    };
+
+    public static readonly Command Command = new("export", "Run export mode commands")
+    {
+        Options =
+        {
+            OutputOption,
+            ImageFormatOption
+        },
+        Action = new CommandLineAction(HandleCommand)
+    };
+
+    private static int HandleCommand(ParseResult parseResult)
+    {
+        var manager = Configuration.Default.ImageFormatsManager;
+        var output = parseResult.GetValue(OutputOption)!;
+        var format = parseResult.GetValue(ImageFormatOption)!;
+        RunExportMode(Program.GetContext(parseResult), output, manager.FindByName(format)!);
+        return 0;
     }
 
-    public static void RunLocalMode(AndroidPackagesDataProvider dataProvider, string localOutput, Language lang,
-        IImageFormat format)
+    private static void RunExportMode(PhiInfoContext context, string localOutput, IImageFormat format)
     {
-        using var context = new PhiInfoContext(dataProvider, lang);
-
         Directory.CreateDirectory(localOutput);
 
         var allInfo = context.Info.ExtractAllInfo();
@@ -115,35 +100,51 @@ internal static class Local
             .ToArray();
         Task.WaitAll(tasks);
 
-        Console.WriteLine("Local extraction completed.");
+        Console.WriteLine("OK");
     }
 
-    private static void ExtractAsset(PhiInfoContext context, string assetDir, string outputPath, string assetId,
+    private static void ExtractAsset(
+        PhiInfoContext context,
+        string assetDir,
+        string outputPath,
+        string assetId,
         IImageFormat format)
     {
         var manager = Configuration.Default.ImageFormatsManager;
         var fullOutputPath = Path.Combine(assetDir, outputPath);
-        Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
+
+        void EnsureDir()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(fullOutputPath)!);
+        }
 
         if (outputPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
+            EnsureDir();
+
             using var textData = context.Bundle.Get<UnityText>(assetId);
             File.WriteAllText(fullOutputPath, textData.Content);
         }
         else if (outputPath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
         {
+            EnsureDir();
+
             var rawMusic = context.Bundle.Get<UnityMusic>(assetId);
             var musicData = PhiInfoDecoders.DecoderMusic(rawMusic);
             File.WriteAllBytes(fullOutputPath, musicData);
         }
         else if (outputPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
         {
+            EnsureDir();
+
             using var file = File.OpenWrite(fullOutputPath + "." + format.FileExtensions.First());
             using var image = PhiInfoDecoders.DecoderImage(context.Bundle.Get<UnityImage>(assetId));
             image.Save(file, manager.GetEncoder(format));
         }
         else if (outputPath.StartsWith("avatar.", StringComparison.OrdinalIgnoreCase))
         {
+            EnsureDir();
+
             using var file = File.OpenWrite(fullOutputPath + "." + format.FileExtensions.First());
             using var image = PhiInfoDecoders.DecoderImage(context.Bundle.Get<UnityImage>(assetId));
             image.Save(file, manager.GetEncoder(format));

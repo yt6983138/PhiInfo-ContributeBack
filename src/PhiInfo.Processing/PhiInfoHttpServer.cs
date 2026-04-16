@@ -22,16 +22,29 @@ public class PhiInfoHttpServer : IDisposable
     private readonly PhiInfoRouter _router;
     private bool _disposed;
 
-    public PhiInfoHttpServer(IDataProvider dataProvider, AppInfo appInfo, uint port = 41669, string host = "127.0.0.1",
-        Language language = Language.Chinese)
+    public PhiInfoHttpServer(
+        PhiInfoContext context,
+        AppInfo appInfo,
+        uint port = 41669,
+        string host = "127.0.0.1")
     {
-        _context = new PhiInfoContext(dataProvider, language);
+        _context = context;
         _router = new PhiInfoRouter(_context, appInfo);
 
         _listener.Prefixes.Add($"http://{host}:{port}/");
         _listener.IgnoreWriteExceptions = true;
         _listener.Start();
         _listenerTask = ListenLoopAsync(_cts.Token);
+    }
+    
+    public PhiInfoHttpServer(
+        IDataProvider dataProvider,
+        AppInfo appInfo,
+        uint port = 41669,
+        string host = "127.0.0.1",
+        Language language = Language.Chinese)
+        : this(new PhiInfoContext(dataProvider, language), appInfo, port, host)
+    {
     }
 
     public bool IsRunning => _listener.IsListening;
@@ -67,8 +80,8 @@ public class PhiInfoHttpServer : IDisposable
         AppInfo appInfo,
         uint port = 41669, string host = "127.0.0.1", Language language = Language.Chinese)
     {
-        return new PhiInfoHttpServer(new AndroidPackagesDataProvider(packages, cldbStream), appInfo,
-            port, host, language);
+        return new PhiInfoHttpServer(new PhiInfoContext(new AndroidPackagesDataProvider(packages, cldbStream)), appInfo,
+            port, host);
     }
 
     private async Task ListenLoopAsync(CancellationToken cancellationToken)

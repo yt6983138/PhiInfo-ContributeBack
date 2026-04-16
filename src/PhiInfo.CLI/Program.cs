@@ -2,9 +2,9 @@
 using System.CommandLine;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using PhiInfo.Core;
 using PhiInfo.Core.Type;
-using PhiInfo.Processing.Type;
+using PhiInfo.Processing.DataProvider;
 using Shua.Zip;
 using Shua.Zip.ReadAt;
 
@@ -12,14 +12,68 @@ namespace PhiInfo.CLI;
 
 internal class Program
 {
-    internal static AppInfo GetAppInfo()
+    private static readonly Option<ShuaZip[]> PackagesOption = new("--package")
     {
-        var version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion ?? "Unknown";
-        return new AppInfo(version, "CLI");
-    }
+        Aliases = { "-p" },
+        Description = "Local paths or HTTP URLs to package files (optional OBBs; order: patch OBB, main OBB, APK)",
+        Required = true,
+        CustomParser = result =>
+        {
+            try
+            {
+                var zips = result.Tokens.Select(token => new ShuaZip(CreateReadAt(token.Value))).ToArray();
+                if (zips.Length == 0)
+                {
+                    result.AddError("Error: No packages provided");
+                    return null;
+                }
 
-    internal static IReadAt CreateReadAt(string path)
+                return zips;
+            }
+            catch (Exception ex)
+            {
+                result.AddError($"Error parsing package: {ex.Message}");
+                return null;
+            }
+        }
+    };
+
+
+    private static readonly Option<FileInfo> ClassDataOption = new("--classdata")
+    {
+        Aliases = { "-cldb" },
+        Description = "Path to the class data TPK file",
+        DefaultValueFactory = _ => new FileInfo("./classdata.tpk"),
+        Validators =
+        {
+            result =>
+            {
+                var file = result.GetValueOrDefault<FileInfo>();
+
+                if (!file.Exists) result.AddError($"File not found: {file.FullName}");
+            }
+        }
+    };
+
+    private static readonly Option<Language> LangOption = new("--language")
+    {
+        Aliases = { "-l", "--lang" },
+        Description = "Default language",
+        DefaultValueFactory = _ => Language.Chinese
+    };
+
+    private static readonly RootCommand RootCommand = new("PhiInfo CLI")
+    {
+        Options = { PackagesOption, ClassDataOption, LangOption },
+        Subcommands =
+        {
+            HttpServer.Command,
+            Export.Command,
+            Tool.Command
+        }
+    };
+
+    private static IReadAt CreateReadAt(string path)
     {
         if (path.StartsWith("http://") || path.StartsWith("https://")) return new HttpReadAt(path);
 
@@ -29,75 +83,16 @@ internal class Program
         return new MmapReadAt(path);
     }
 
-    internal static bool ValidateCommonOptions(IReadAt[] packages, FileInfo classDataFile)
+    internal static PhiInfoContext GetContext(ParseResult parseResult)
     {
-        if (packages.Length == 0)
-        {
-            Console.WriteLine("Error: No packages provided");
-            return false;
-        }
-
-        if (!classDataFile.Exists)
-        {
-            Console.WriteLine($"Error: Class data file not found: {classDataFile.FullName}");
-            return false;
-        }
-
-        return true;
+        var zips = parseResult.GetValue(PackagesOption)!;
+        var classData = parseResult.GetValue(ClassDataOption)!;
+        var lang = parseResult.GetValue(LangOption);
+        return new PhiInfoContext(new AndroidPackagesDataProvider(zips, classData.OpenRead()), lang);
     }
 
     private static int Main(string[] args)
     {
-        Option<IReadAt[]> packagesOption = new("--package")
-        {
-            Aliases = { "-p" },
-            Description = """
-                          Path to package files or URLs. A package file can be APK, main OBB, or patch OBB. 
-                          If your copy of Phigros is downloaded from Google play require all of those 
-                          or the first two files.
-                          If your copy of Phigros is downloaded from TapTap, you only need to provide 
-                          the APK file, since TapTap's APK already contains all the data.
-                          """,
-            Required = true,
-            CustomParser = result =>
-            {
-                try
-                {
-                    var readAts = result.Tokens
-                        .Select(token => CreateReadAt(token.Value))
-                        .ToArray();
-                    return readAts;
-                }
-                catch (Exception ex)
-                {
-                    result.AddError($"Error parsing package: {ex.Message}");
-                    return null;
-                }
-            }
-        };
-
-        Option<FileInfo> classDataOption = new("--classdata")
-        {
-            Aliases = { "-cldb" },
-            Description = "Path to the class data TPK file",
-            DefaultValueFactory = _ => new FileInfo("./classdata.tpk")
-        };
-
-        Option<Language> langOption = new("--language")
-        {
-            Aliases = { "-l", "--lang" },
-            Description = "Default language",
-            DefaultValueFactory = _ => Language.Chinese
-        };
-
-        // Root command
-        RootCommand rootCommand = new("PhiInfo CLI");
-        rootCommand.Options.Add(packagesOption);
-        rootCommand.Options.Add(classDataOption);
-        rootCommand.Options.Add(langOption);
-        rootCommand.Add(HttpServer.CreateCommand(packagesOption, classDataOption, langOption));
-        rootCommand.Add(Local.CreateCommand(packagesOption, classDataOption, langOption));
-
-        return rootCommand.Parse(args).Invoke();
+        return RootCommand.Parse(args).Invoke();
     }
 }
